@@ -3,6 +3,7 @@ package com.user.jobapplicationtracker.controller;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,8 +32,15 @@ public class JobApplicationController {
 
     // GET application by id
     @GetMapping("/{id}")
-    public Optional<JobApplication> getById(@PathVariable Long id) {
-        return service.getById(id);
+    public ResponseEntity<JobApplication> getById(@PathVariable Long id) {
+        Optional<JobApplication> result = service.getById(id);
+        // 200
+        if (result.isPresent()) {
+            return ResponseEntity.ok(result.get());
+        } else {
+        // 404
+            return ResponseEntity.notFound().build();
+        }
     }
 
     // POST create new application

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import com.user.jobapplicationtracker.models.JobApplication;
 import com.user.jobapplicationtracker.repository.JobApplicationRepository;
@@ -23,6 +24,7 @@ public class JobApplicationService {
     }
 
     // Get job applications by id (single)
+    @GetMapping("/{id}")
     public Optional<JobApplication> getById(Long id) {
         return repository.findById(id);
     }
