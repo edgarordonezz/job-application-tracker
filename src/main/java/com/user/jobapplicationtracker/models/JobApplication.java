@@ -3,6 +3,8 @@ package com.user.jobapplicationtracker.models;
 import java.time.LocalDate;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -23,6 +25,7 @@ public class JobApplication {
 
     private String position; // position applied to
 
+    @Enumerated(EnumType.STRING)
     private JobApplicationStatus status; // e.g. "Applied", "Interviewing", "Rejected", etc
 
     private LocalDate appliedDate; // date applied
