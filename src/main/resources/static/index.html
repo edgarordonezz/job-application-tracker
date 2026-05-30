@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Job Application Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #141417;
+    --surface2: #1b1b1f;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #f0eeea;
+    --muted: #888784;
+    --accent: #c8f080;
+    --accent-dim: rgba(200,240,128,0.12);
+    --accent-dim2: rgba(200,240,128,0.06);
+    --red: #ff6b6b;
+    --red-dim: rgba(255,107,107,0.12);
+    --amber: #ffbb44;
+    --amber-dim: rgba(255,187,68,0.12);
+    --blue: #7eb8f7;
+    --blue-dim: rgba(126,184,247,0.12);
+    --purple: #c4a8ff;
+    --purple-dim: rgba(196,168,255,0.12);
+    --radius: 10px;
+    --radius-lg: 14px;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* Layout */
+  .shell { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 220px;
+    min-height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 28px 0 20px;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+  }
+  .main { margin-left: 220px; flex: 1; padding: 40px 48px; max-width: 1100px; }
+
+  /* Sidebar */
+  .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    padding: 0 24px 28px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .logo span { color: var(--muted); }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 24px;
+    font-size: 13.5px;
+    color: var(--muted);
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    border-radius: 0;
+    transition: color 0.15s, background 0.15s;
+    font-family: var(--font);
+  }
+  .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+  .nav-item.active { color: var(--accent); background: var(--accent-dim2); }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 16px 24px 0;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* Header */
+  .page-header { margin-bottom: 32px; }
+  .page-header h1 { font-size: 24px; font-weight: 500; letter-spacing: -0.02em; color: var(--text); }
+  .page-header p { font-size: 13.5px; color: var(--muted); margin-top: 4px; }
+
+  /* Stats row */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 32px; }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+  .stat-label { font-size: 11px; font-family: var(--mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+  .stat-value { font-size: 26px; font-weight: 500; letter-spacing: -0.03em; }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .toolbar-left { display: flex; gap: 8px; align-items: center; flex: 1; }
+  .search-wrap { position: relative; flex: 1; max-width: 280px; }
+  .search-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--muted); pointer-events: none; }
+  .search-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 10px 8px 32px;
+    font-size: 13.5px;
+    color: var(--text);
+    font-family: var(--font);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-input:focus { border-color: var(--border2); }
+  select.filter-select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--text);
+    font-family: var(--font);
+    outline: none;
+    cursor: pointer;
+  }
+  select.filter-select option { background: #1b1b1f; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-size: 13.5px;
+    font-family: var(--font);
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: #0d1a00; }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-ghost {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--border2); }
+  .btn-danger { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,107,107,0.2); }
+  .btn-danger:hover { opacity: 0.8; }
+  .btn svg { width: 15px; height: 15px; }
+
+  /* Table */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; cursor: pointer; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.025); }
+  td { padding: 13px 16px; font-size: 14px; }
+  td.company { font-weight: 500; color: var(--text); }
+  td.position { color: var(--muted); font-size: 13.5px; }
+  td.date { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  td.actions { text-align: right; }
+  td.actions button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+    font-family: var(--font);
+  }
+  td.actions button:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+  td.actions .del:hover { color: var(--red); background: var(--red-dim); }
+
+  /* Status badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 500;
+    font-family: var(--mono);
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+  .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .badge-APPLIED { background: var(--blue-dim); color: var(--blue); }
+  .badge-INTERVIEWING { background: var(--amber-dim); color: var(--amber); }
+  .badge-OFFERED { background: var(--accent-dim); color: var(--accent); }
+  .badge-REJECTED { background: var(--red-dim); color: var(--red); }
+  .badge-PENDING { background: var(--purple-dim); color: var(--purple); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 64px 24px;
+    color: var(--muted);
+  }
+  .empty-state svg { width: 40px; height: 40px; margin: 0 auto 16px; opacity: 0.3; display: block; }
+  .empty-state p { font-size: 14px; }
+
+  /* Modal overlay */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    width: 480px;
+    max-width: 95vw;
+    animation: pop 0.18s ease;
+  }
+  @keyframes pop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .modal-header h2 { font-size: 17px; font-weight: 500; }
+  .modal-close { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px; border-radius: 6px; }
+  .modal-close:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+  .modal-close svg { width: 18px; height: 18px; display: block; }
+
+  /* Form */
+  .form-row { margin-bottom: 16px; }
+  .form-row label { display: block; font-size: 12px; font-family: var(--mono); color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 6px; }
+  .form-row input, .form-row select, .form-row textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 9px 12px;
+    font-size: 14px;
+    color: var(--text);
+    font-family: var(--font);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus { border-color: var(--accent); }
+  .form-row select option { background: #1b1b1f; }
+  .form-row textarea { resize: vertical; min-height: 90px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+
+  /* AI Scorer panel */
+  .ai-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px 28px;
+    margin-top: 32px;
+  }
+  .ai-panel-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .ai-panel-header h2 { font-size: 16px; font-weight: 500; }
+  .ai-badge {
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+  .ai-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .score-result {
+    display: none;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-top: 16px;
+  }
+  .score-result.visible { display: block; }
+  .score-row { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+  .score-number {
+    font-size: 40px;
+    font-weight: 500;
+    font-family: var(--mono);
+    color: var(--accent);
+    line-height: 1;
+  }
+  .score-bar-wrap { flex: 1; }
+  .score-bar-bg { background: rgba(255,255,255,0.07); border-radius: 4px; height: 6px; overflow: hidden; }
+  .score-bar-fill { height: 100%; border-radius: 4px; background: var(--accent); transition: width 0.8s ease; }
+  .score-text { font-size: 13.5px; color: var(--muted); line-height: 1.7; white-space: pre-wrap; }
+
+  /* Loading spinner */
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(200,240,128,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Section page (AI scorer) */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    font-size: 13.5px;
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { border-color: rgba(200,240,128,0.3); color: var(--accent); }
+  .toast.error { border-color: rgba(255,107,107,0.3); color: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">JAT<span>/tracker</span></div>
+    <button class="nav-item active" onclick="showSection('applications', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg>
+      Applications
+    </button>
+    <button class="nav-item" onclick="showSection('scorer', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      AI Scorer
+    </button>
+    <div class="sidebar-footer" id="app-count">0 applications</div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Applications section -->
+    <div class="section active" id="section-applications">
+      <div class="page-header">
+        <h1>Applications</h1>
+        <p>Track every application in one place</p>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Total</div>
+          <div class="stat-value" id="stat-total">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Interviews</div>
+          <div class="stat-value" style="color: var(--amber)" id="stat-interview">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Offers</div>
+          <div class="stat-value" style="color: var(--accent)" id="stat-offered">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Rejected</div>
+          <div class="stat-value" style="color: var(--red)" id="stat-rejected">0</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" class="search-input" placeholder="Search company or role..." id="search-input" oninput="renderTable()"/>
+          </div>
+          <select class="filter-select" id="filter-status" onchange="renderTable()">
+            <option value="">All statuses</option>
+            <option value="APPLIED">Applied</option>
+            <option value="INTERVIEWING">Interview</option>
+            <option value="OFFERED">Offered</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="openAddModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+          Add Application
+        </button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Position</th>
+              <th>Status</th>
+              <th>Applied</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+        <div class="empty-state" id="empty-state" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12h6M9 16h6M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/></svg>
+          <p>No applications yet — add one to get started</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Scorer section -->
+    <div class="section" id="section-scorer">
+      <div class="page-header">
+        <h1>AI Match Scorer</h1>
+        <p>Paste your resume and a job description to get a match score</p>
+      </div>
+
+      <div class="ai-panel">
+        <div class="ai-panel-header">
+          <h2>Score your fit</h2>
+          <span class="ai-badge">GEMINI POWERED</span>
+        </div>
+
+        <div class="ai-inputs">
+          <div class="form-row" style="margin:0">
+            <label>Your Resume</label>
+            <textarea id="ai-resume" placeholder="Paste your resume text here..." style="min-height: 200px;"></textarea>
+          </div>
+          <div class="form-row" style="margin:0">
+            <label>Job Description</label>
+            <textarea id="ai-jd" placeholder="Paste the job description here..." style="min-height: 200px;"></textarea>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="score-btn" onclick="scoreJob()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Score Match
+        </button>
+
+        <div class="score-result" id="score-result">
+          <div class="score-row">
+            <div class="score-number" id="score-num">--</div>
+            <div class="score-bar-wrap">
+              <div style="font-size:12px; color: var(--muted); margin-bottom:6px; font-family: var(--mono);">MATCH SCORE</div>
+              <div class="score-bar-bg"><div class="score-bar-fill" id="score-bar" style="width:0%"></div></div>
+            </div>
+          </div>
+          <div class="score-text" id="score-text"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Add Application</h2>
+      <button class="modal-close" onclick="closeModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <input type="hidden" id="edit-id"/>
+
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Company</label>
+        <input type="text" id="f-company" placeholder="e.g. Google"/>
+      </div>
+      <div class="form-row">
+        <label>Position</label>
+        <input type="text" id="f-position" placeholder="e.g. SWE Intern"/>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Status</label>
+        <select id="f-status">
+          <option value="APPLIED">Applied</option>
+          <option value="INTERVIEWING">Interview</option>
+          <option value="OFFERED">Offered</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Applied Date</label>
+        <input type="date" id="f-date"/>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveApplication()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:8080/api/applications';
+let apps = [];
+let editingId = null;
+
+async function loadApps() {
+  try {
+    const res = await fetch(API);
+    if (!res.ok) throw new Error();
+    apps = await res.json();
+    renderTable();
+    updateStats();
+    document.getElementById('app-count').textContent = apps.length + ' application' + (apps.length !== 1 ? 's' : '');
+  } catch {
+    showToast('Could not connect to API — is Spring Boot running?', 'error');
+  }
+}
+
+function renderTable() {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const statusFilter = document.getElementById('filter-status').value;
+  const tbody = document.getElementById('table-body');
+  const empty = document.getElementById('empty-state');
+
+  let filtered = apps.filter(a => {
+    const matchSearch = !search || a.company.toLowerCase().includes(search) || a.position.toLowerCase().includes(search);
+    const matchStatus = !statusFilter || a.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = filtered.map(a => `
+    <tr>
+      <td class="company">${esc(a.company)}</td>
+      <td class="position">${esc(a.position)}</td>
+      <td><span class="badge badge-${a.status}">${a.status}</span></td>
+      <td class="date">${a.appliedDate || '—'}</td>
+      <td class="actions">
+        <button onclick="openEditModal(${a.id})" title="Edit">✎</button>
+        <button class="del" onclick="deleteApp(${a.id}, event)" title="Delete">✕</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function updateStats() {
+  document.getElementById('stat-total').textContent = apps.length;
+  document.getElementById('stat-interview').textContent = apps.filter(a => a.status === 'INTERVIEWING').length;
+  document.getElementById('stat-offered').textContent = apps.filter(a => a.status === 'OFFERED').length;
+  document.getElementById('stat-rejected').textContent = apps.filter(a => a.status === 'REJECTED').length;
+  document.getElementById('app-count').textContent = apps.length + ' application' + (apps.length !== 1 ? 's' : '');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'Add Application';
+  document.getElementById('edit-id').value = '';
+  document.getElementById('f-company').value = '';
+  document.getElementById('f-position').value = '';
+  document.getElementById('f-status').value = 'APPLIED';
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-company').focus(), 100);
+}
+
+function openEditModal(id) {
+  const app = apps.find(a => a.id === id);
+  if (!app) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = 'Edit Application';
+  document.getElementById('f-company').value = app.company;
+  document.getElementById('f-position').value = app.position;
+  document.getElementById('f-status').value = app.status;
+  document.getElementById('f-date').value = app.appliedDate || '';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+async function saveApplication() {
+  const body = {
+    company: document.getElementById('f-company').value.trim(),
+    position: document.getElementById('f-position').value.trim(),
+    status: document.getElementById('f-status').value,
+    appliedDate: document.getElementById('f-date').value
+  };
+  if (!body.company || !body.position) { showToast('Company and position are required', 'error'); return; }
+
+  try {
+    let res;
+    if (editingId) {
+      res = await fetch(`${API}/${editingId}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    } else {
+      res = await fetch(API, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    }
+    if (!res.ok) throw new Error();
+    closeModal();
+    await loadApps();
+    showToast(editingId ? 'Application updated' : 'Application added', 'success');
+  } catch {
+    showToast('Something went wrong', 'error');
+  }
+}
+
+async function deleteApp(id, e) {
+  e.stopPropagation();
+  try {
+    const res = await fetch(`${API}/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error();
+    await loadApps();
+    showToast('Deleted', 'success');
+  } catch {
+    showToast('Could not delete', 'error');
+  }
+}
+
+async function scoreJob() {
+  const resume = document.getElementById('ai-resume').value.trim();
+  const jd = document.getElementById('ai-jd').value.trim();
+  if (!resume || !jd) { showToast('Paste both resume and job description', 'error'); return; }
+
+  const btn = document.getElementById('score-btn');
+  btn.innerHTML = '<span class="spinner"></span> Scoring...';
+  btn.disabled = true;
+  document.getElementById('score-result').classList.remove('visible');
+
+  try {
+    const res = await fetch('http://localhost:8080/api/ai/score', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ resume, jobDescription: jd })
+    });
+    if (!res.ok) throw new Error();
+    const text = await res.text();
+
+    const scoreMatch = text.match(/\b(\d{1,3})\s*(?:\/\s*100|out of 100)?/);
+    const score = scoreMatch ? Math.min(100, parseInt(scoreMatch[1])) : null;
+
+    document.getElementById('score-num').textContent = score !== null ? score : '--';
+    document.getElementById('score-bar').style.width = (score || 0) + '%';
+    document.getElementById('score-text').textContent = text;
+    document.getElementById('score-result').classList.add('visible');
+  } catch {
+    showToast('AI scorer error — check your API endpoint', 'error');
+  } finally {
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Score Match';
+    btn.disabled = false;
+  }
+}
+
+function showSection(name, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  el.classList.add('active');
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+loadApps();
+</script>
+</body>
+</html>

@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import com.user.jobapplicationtracker.models.JobApplication;
 import com.user.jobapplicationtracker.repository.JobApplicationRepository;
@@ -23,8 +22,7 @@ public class JobApplicationService {
         return repository.findAll();
     }
 
-    // Get job applications by id (single)
-    @GetMapping("/{id}")
+    // Get job application by id
     public Optional<JobApplication> getById(Long id) {
         return repository.findById(id);
     }
@@ -48,6 +46,9 @@ public class JobApplicationService {
     }
     // Delete job application by id
     public void delete(Long id) {
+        if (!repository.existsById(id)) {
+            throw new RuntimeException("Job application not found with id: " + id);
+        }
         repository.deleteById(id);
     }
 }

@@ -45,19 +45,29 @@ public class JobApplicationController {
 
     // POST create new application
     @PostMapping
-    public JobApplication create (@RequestBody JobApplication application) {
-        return service.create(application);
+    public ResponseEntity<JobApplication> create (@RequestBody JobApplication application) {
+        JobApplication created = service.create(application);
+        return ResponseEntity.status(201).body(created); // Return 201 if created
     }
 
     // PUT update application
     @PutMapping("/{id}")
-    public JobApplication update (@PathVariable Long id, @RequestBody JobApplication updated) {
-        return service.update(id, updated);
+    public ResponseEntity<JobApplication> update (@PathVariable Long id, @RequestBody JobApplication updated) {
+        try {
+            return ResponseEntity.ok(service.update(id, updated));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
-    // DELETE remove application 
+    // DELETE remove application
     @DeleteMapping("/{id}")
-    public void delete (@PathVariable Long id) {
-        service.delete(id);
+    public ResponseEntity<Void> delete (@PathVariable Long id) {
+        try {
+            service.delete(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
