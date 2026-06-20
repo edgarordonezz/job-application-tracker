@@ -33,3 +33,4 @@ build/
 .vscode/
 tempCodeRunnerFile.xml
 application-local.properties
+src/main/resources/application.properties
