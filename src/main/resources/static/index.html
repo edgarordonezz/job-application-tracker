@@ -373,9 +373,90 @@
   .toast.show { opacity: 1; transform: translateY(0); }
   .toast.success { border-color: rgba(200,240,128,0.3); color: var(--accent); }
   .toast.error { border-color: rgba(255,107,107,0.3); color: var(--red); }
+
+  /* Auth screen */
+  #auth-screen {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  #auth-screen.show { display: flex; }
+  .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 36px 40px;
+    width: 380px;
+    max-width: 95vw;
+  }
+  .auth-logo {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    margin-bottom: 28px;
+  }
+  .auth-logo span { color: var(--muted); }
+  .auth-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    padding: 4px;
+    margin-bottom: 24px;
+  }
+  .auth-tab {
+    flex: 1;
+    padding: 7px;
+    border: none;
+    background: none;
+    border-radius: 7px;
+    font-size: 13.5px;
+    font-family: var(--font);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .auth-tab.active { background: var(--surface); color: var(--text); }
+  .auth-error {
+    background: var(--red-dim);
+    border: 1px solid rgba(255,107,107,0.2);
+    border-radius: var(--radius);
+    color: var(--red);
+    font-size: 13px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    display: none;
+  }
 </style>
 </head>
 <body>
+
+<!-- Auth Screen -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">JAT<span>/tracker</span></div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login', this)">Sign in</button>
+      <button class="auth-tab" onclick="switchAuthTab('register', this)">Register</button>
+    </div>
+    <div id="auth-error" class="auth-error"></div>
+    <div class="form-row">
+      <label>Username</label>
+      <input type="text" id="auth-username" placeholder="your username" onkeydown="if(event.key==='Enter')submitAuth()"/>
+    </div>
+    <div class="form-row">
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="your password" onkeydown="if(event.key==='Enter')submitAuth()"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" id="auth-submit-btn" onclick="submitAuth()">Sign in</button>
+  </div>
+</div>
 
 <div class="shell">
   <!-- Sidebar -->
@@ -389,7 +470,14 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
       AI Scorer
     </button>
-    <div class="sidebar-footer" id="app-count">0 applications</div>
+    <button class="nav-item" onclick="logout()" style="color:var(--red)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      Sign out
+    </button>
+    <div class="sidebar-footer">
+      <div id="sidebar-username" style="margin-bottom:4px;color:var(--text)"></div>
+      <div id="app-count">0 applications</div>
+    </div>
   </aside>
 
   <!-- Main -->
@@ -556,12 +644,102 @@
 
 <script>
 const API = 'http://localhost:8080/api/applications';
+const AUTH_API = 'http://localhost:8080/api/auth';
 let apps = [];
 let editingId = null;
+let currentAuthTab = 'login';
+
+// Token helpers
+function getToken() { return localStorage.getItem('jat_token'); }
+function setToken(t) { localStorage.setItem('jat_token', t); }
+function clearToken() { localStorage.removeItem('jat_token'); }
+
+// Wraps fetch with Authorization header
+function authFetch(url, options = {}) {
+  const token = getToken();
+  return fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+      ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+    }
+  });
+}
+
+function handle401(res) {
+  if (res.status === 401) { logout(); return true; }
+  return false;
+}
+
+// Auth
+function switchAuthTab(tab, el) {
+  currentAuthTab = tab;
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('auth-submit-btn').textContent = tab === 'login' ? 'Sign in' : 'Register';
+  document.getElementById('auth-error').style.display = 'none';
+}
+
+async function submitAuth() {
+  const username = document.getElementById('auth-username').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+
+  if (!username || !password) {
+    errEl.textContent = 'Username and password are required';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('auth-submit-btn');
+  btn.disabled = true;
+
+  try {
+    if (currentAuthTab === 'register') {
+      const res = await fetch(`${AUTH_API}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      if (!res.ok) { const msg = await res.text(); throw new Error(msg || 'Registration failed'); }
+    }
+
+    const loginRes = await fetch(`${AUTH_API}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    if (!loginRes.ok) throw new Error('Invalid username or password');
+    const data = await loginRes.json();
+    setToken(data.token);
+
+    document.getElementById('auth-screen').classList.remove('show');
+    document.getElementById('sidebar-username').textContent = username;
+    await loadApps();
+  } catch (e) {
+    errEl.textContent = e.message || 'Something went wrong';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function logout() {
+  clearToken();
+  apps = [];
+  renderTable();
+  updateStats();
+  document.getElementById('sidebar-username').textContent = '';
+  document.getElementById('auth-username').value = '';
+  document.getElementById('auth-password').value = '';
+  document.getElementById('auth-screen').classList.add('show');
+}
 
 async function loadApps() {
   try {
-    const res = await fetch(API);
+    const res = await authFetch(API);
+    if (handle401(res)) return;
     if (!res.ok) throw new Error();
     apps = await res.json();
     renderTable();
@@ -657,10 +835,11 @@ async function saveApplication() {
   try {
     let res;
     if (editingId) {
-      res = await fetch(`${API}/${editingId}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      res = await authFetch(`${API}/${editingId}`, { method: 'PUT', body: JSON.stringify(body) });
     } else {
-      res = await fetch(API, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      res = await authFetch(API, { method: 'POST', body: JSON.stringify(body) });
     }
+    if (handle401(res)) return;
     if (!res.ok) throw new Error();
     closeModal();
     await loadApps();
@@ -673,7 +852,8 @@ async function saveApplication() {
 async function deleteApp(id, e) {
   e.stopPropagation();
   try {
-    const res = await fetch(`${API}/${id}`, { method: 'DELETE' });
+    const res = await authFetch(`${API}/${id}`, { method: 'DELETE' });
+    if (handle401(res)) return;
     if (!res.ok) throw new Error();
     await loadApps();
     showToast('Deleted', 'success');
@@ -693,11 +873,11 @@ async function scoreJob() {
   document.getElementById('score-result').classList.remove('visible');
 
   try {
-    const res = await fetch('http://localhost:8080/api/ai/score', {
+    const res = await authFetch('http://localhost:8080/api/ai/score', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ resume, jobDescription: jd })
     });
+    if (handle401(res)) return;
     if (!res.ok) throw new Error();
     const text = await res.text();
 
@@ -736,7 +916,11 @@ document.getElementById('modal-overlay').addEventListener('click', e => {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-loadApps();
+if (getToken()) {
+  loadApps();
+} else {
+  document.getElementById('auth-screen').classList.add('show');
+}
 </script>
 </body>
 </html>

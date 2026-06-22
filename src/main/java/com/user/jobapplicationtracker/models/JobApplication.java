@@ -29,4 +29,6 @@ public class JobApplication {
     private JobApplicationStatus status; // e.g. "Applied", "Interviewing", "Rejected", etc
 
     private LocalDate appliedDate; // date applied
+
+    private String username;
 }

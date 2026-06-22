@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import com.user.jobapplicationtracker.Entity.User;
 import com.user.jobapplicationtracker.repository.UserRepository;
 
-import io.jsonwebtoken.lang.Collections;
+import java.util.Collections;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {

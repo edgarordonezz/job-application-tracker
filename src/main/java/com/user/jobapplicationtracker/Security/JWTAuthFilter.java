@@ -7,7 +7,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -19,8 +18,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
-@Component
-@Slf4j // log specific errors
+@Slf4j
 public class JWTAuthFilter extends OncePerRequestFilter {
     
     @Autowired
@@ -52,7 +50,8 @@ public class JWTAuthFilter extends OncePerRequestFilter {
             // pass the single request to the next stage ()
             filterChain.doFilter(request, response); // <- runs regardless of whether the if succeeded
         } catch (Exception e) {
-            log.error("...", e.getMessage());
+            log.error("JWT filter error: {}", e.getMessage());
+            filterChain.doFilter(request, response);
         }
     }
 

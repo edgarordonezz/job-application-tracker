@@ -17,9 +17,8 @@ public class JobApplicationService {
         this.repository = repository;
     }
 
-    // Get all job applications
-    public List<JobApplication> getAll() {
-        return repository.findAll();
+    public List<JobApplication> getAllByUser(String username) {
+        return repository.findByUsername(username);
     }
 
     // Get job application by id
@@ -33,9 +32,12 @@ public class JobApplicationService {
     }
 
     // Update job application
-    public JobApplication update(Long id, JobApplication updated) {
+    public JobApplication update(Long id, JobApplication updated, String username) {
         return repository.findById(id)
                 .map(existing -> {
+                    if (!existing.getUsername().equals(username)) {
+                        throw new RuntimeException("Forbidden");
+                    }
                     existing.setCompany(updated.getCompany());
                     existing.setPosition(updated.getPosition());
                     existing.setStatus(updated.getStatus());
@@ -44,10 +46,13 @@ public class JobApplicationService {
                 })
                 .orElseThrow(() -> new RuntimeException("Job application not found"));
     }
+
     // Delete job application by id
-    public void delete(Long id) {
-        if (!repository.existsById(id)) {
-            throw new RuntimeException("Job application not found with id: " + id);
+    public void delete(Long id, String username) {
+        JobApplication app = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Job application not found with id: " + id));
+        if (!app.getUsername().equals(username)) {
+            throw new RuntimeException("Forbidden");
         }
         repository.deleteById(id);
     }
