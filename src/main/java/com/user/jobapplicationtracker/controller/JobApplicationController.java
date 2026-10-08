@@ -34,8 +34,8 @@ public class JobApplicationController {
 
     // GET application by id
     @GetMapping("/{id}")
-    public ResponseEntity<JobApplication> getById(@PathVariable Long id) {
-        Optional<JobApplication> result = service.getById(id);
+    public ResponseEntity<JobApplication> getById(@PathVariable Long id, Authentication authentication) {
+        Optional<JobApplication> result = service.getById(id, authentication.getName());
         // 200
         if (result.isPresent()) {
             return ResponseEntity.ok(result.get());

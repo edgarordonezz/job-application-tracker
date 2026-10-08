@@ -21,13 +21,15 @@ public class JobApplicationService {
         return repository.findByUsername(username);
     }
 
-    // Get job application by id
-    public Optional<JobApplication> getById(Long id) {
-        return repository.findById(id);
+    // Get job application by id, only if it belongs to the user
+    public Optional<JobApplication> getById(Long id, String username) {
+        return repository.findByIdAndUsername(id, username);
     }
 
     // Create new job application record
     public JobApplication create (JobApplication newApplication) {
+        // ignore any client-sent id so save() always inserts instead of overwriting an existing row
+        newApplication.setId(null);
         return repository.save(newApplication);
     }
 
